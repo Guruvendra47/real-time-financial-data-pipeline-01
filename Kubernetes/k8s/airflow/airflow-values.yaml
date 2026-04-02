@@ -17,8 +17,8 @@ webserver:
 dags:
   gitSync:
     enabled: true
-    repo: "https://github.com/Guruvendra47/real-time-financial-data-pipeline.git"
+    repo: "https://github.com/Guruvendra47/real-time-financial-data-pipeline-01.git"
     branch: "main"
-    subPath: "kubernetes/dags"   # change if needed
+    subPath: "Kubernetes/k8s/airflow/dags"   # change if needed
     wait: 60
     recommendedProbeSetting: true
