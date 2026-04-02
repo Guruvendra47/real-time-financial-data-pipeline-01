@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rtf-config
+  namespace: rtf-data-pipeline
+data:
+  ENV: "production"
+  KAFKA_BROKER: "rtf-kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
+  S3_BUCKET: "rtf-data-bucket"
+  SPARK_MASTER: "local[*]"

@@ -1,0 +1,24 @@
+executor: CeleryExecutor
+
+redis:
+  enabled: true
+
+postgresql:
+  enabled: true
+
+config:
+  core:
+    load_examples: false
+  
+webserver:
+  service:
+    type: NodePort
+
+dags:
+  gitSync:
+    enabled: true
+    repo: "https://github.com/Guruvendra47/real-time-financial-data-pipeline.git"
+    branch: "main"
+    subPath: "kubernetes/dags"   # change if needed
+    wait: 60
+    recommendedProbeSetting: true

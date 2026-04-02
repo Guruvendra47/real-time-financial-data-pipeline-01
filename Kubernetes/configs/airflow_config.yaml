@@ -1,0 +1,2 @@
+dag_schedule: "@daily"
+retries: 2

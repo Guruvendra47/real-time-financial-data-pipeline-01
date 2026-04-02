@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rtf-service
+  namespace: rtf-data-pipeline      # Must match your new namespace
+spec:
+  type: NodePort                   # For AWS eks we use type: LoadBalancer
+  selector:
+    app: rtf-first-app                     # Must match the labels in your deployment.yaml
+  ports:
+    - protocol: TCP
+      port: 80                     # The port the Service listens on
+      targetPort: 80               # The port the Pod is listening on

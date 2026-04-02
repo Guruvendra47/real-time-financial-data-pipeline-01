@@ -1,0 +1,2 @@
+app_name: streaming-app
+checkpoint_location: s3a://real-time-financial-data-pipeline/checkpoints

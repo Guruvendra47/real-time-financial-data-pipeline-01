@@ -1,0 +1,10 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: trades
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: rtf-kafka   # MUST match your cluster name
+spec:
+  partitions: 1
+  replicas: 1

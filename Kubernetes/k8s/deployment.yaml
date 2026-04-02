@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rtf-deployment
+  namespace: rtf-data-pipeline
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rtf-first-app
+  template:
+    metadata:
+      labels:
+        app: rtf-first-app
+    spec:
+      containers:
+        - name: rtf-first-app-container
+          image: nginx:latest   # 🔄 Replace later with your real image
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+
+          # ✅ Health checks (VERY IMPORTANT in production)
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+          # ✅ Resource limits (production best practice)
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+          # ✅ Config + Secret injection (your original — correct)
+          envFrom:
+            - configMapRef:
+                name: rtf-config
+            - secretRef:
+                name: rtf-secret

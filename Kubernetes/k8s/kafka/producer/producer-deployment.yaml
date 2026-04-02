@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-producer
+  namespace: rtf-data-pipeline
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: kafka-producer
+
+  template:
+    metadata:
+      labels:
+        app: kafka-producer
+
+    spec:
+      containers:
+        - name: kafka-producer
+          image: kafka-producer:1.0
+          imagePullPolicy: Never
+
+          env:
+            - name: KAFKA_BROKER
+              value: "rtf-kafka-kafka-bootstrap.kafka:9092"
+
+            - name: KAFKA_TOPIC
+              value: "trades"
+
+            - name: FINNHUB_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rtf-secret
+                  key: FINNHUB_API_KEY
+
+            - name: SYMBOLS
+              value: "AAPL,TSLA,MSFT,BINANCE:BTCUSDT"

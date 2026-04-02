@@ -1,0 +1,14 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: rtf-pool
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: rtf-kafka
+spec:
+  replicas: 1   # ⚡ FIXED (not 3)
+  roles:
+    - controller
+    - broker
+  storage:
+    type: ephemeral   # ⚡ FIXED
