@@ -1,0 +1,381 @@
+minikube commands 
+
+1. Start minikube
+--driver=docker 
+👉 Tells Minikube: -> “Run Kubernetes inside Docker instead of VM”
+--memory=4096
+👉 Allocates 4GB RAM
+--cpus=2
+👉 Gives 2 CPU cores
+terminal command
+minikube start --driver=docker --memory=8144 --cpus=4
+
+2. Create namespace 
+Namespace = project boundary
+
+Think like this:
+Without Namespace - Everything mixed ❌ -  Hard to manage ❌ - Not production ❌
+With Namespace - Clean separation ✅ - Organized ✅ - Production-ready ✅
+	
+Real-world use - Companies use namespaces like:
+i. dev
+ii. staging
+iii. prod
+iv. data-platform
+
+For YOUR project -> We create: -> realtimefinancia-ldata-platform
+terminal command : 
+kubectl create namespace rtf-data-pipline
+
+3. verify the namespace creation
+terminal command
+kubectl get namespaces
+
+
+----this is optional----
+4. create your first Pod
+A Pod = wrapper around a container
+Create a pod file with yaml 
+then execute terminal command
+kubectl apply -f pod.yaml
+ 
+5. verify the psd created
+terminal command
+kubectl get pods -n rtf-data-pipline
+
+Check logs (important habit)
+terminal command
+kubectl logs nginx-pod -n rtf-data-pipline
+
+Remember: Pod → good for learning ❌ not used in production. we use Deployment → which manages Pods automatically ✅
+
+6. when you want to delete the pod
+Why pod deleted?
+👉 Because now Deployment will manage Pods
+👉 We don’t manually create Pods anymore
+
+terminal command
+kubectl delete pod nginx-pod -n rtf-data-pipline
+
+
+7. Create Deployment YAML
+FULL EXPLANATION (VERY IMPORTANT)
+replicas: 2
+👉 Run 2 Pods
+Why:
+High availability
+Load handling
+
+selector.matchLabels
+👉 Tells Deployment:
+“Which Pods belong to me?”
+
+template.metadata.labels
+👉 Label assigned to Pods
+👉 MUST match selector
+
+template.spec
+👉 Defines the Pod
+-------end ---------
+
+Apply Deployment:
+terminal command
+kubectl apply -f deployment.yaml
+
+Verify:
+terminal command
+kubectl get deployments -n rtf-data-pipline
+kubectl get pods -n rtf-data-pipline
+
+8. Test scaling (IMPORTANT)
+
+terminal command
+kubectl scale deployment rtf-deployment --replicas=3 -n rtf-data-pipline
+kubectl get pods -n rtf-data-pipline
+
+9. Create Service YAML
+Why we are doing it (REAL reason)
+Problem:
+i.Pods keep changing
+ii.Pod IP changes
+You cannot rely on Pod directly
+👉 Solution:
+Service = stable access layer
+
+yaml file FULL EXPLANATION (VERY IMPORTANT)
+
+selector: app: nginx
+👉 Connects Service → Pods
+👉 MUST match Deployment label
+
+port: 80
+👉 Service port
+
+targetPort: 80
+👉 Container port
+
+type: NodePort
+👉 Exposes app outside cluster
+
+Apply Service:
+terminal command
+kubectl apply -f service.yaml
+
+Verify:
+terminal command
+kubectl get services -n rtf-data-pipline
+
+10. Access your app
+terminal command
+minikube service rtf-service -n rtf-data-pipline
+
+11. CONFIGMAP & SECRET (REAL PROJECT LEVEL)
+Remember: ConfigMap (non-sensitive data)
+Used for:
+i. S3 bucket
+ii. environment (dev/prod)
+iii. Kafka topic
+
+Secret (sensitive data)
+Used for:
+i. Snowflake password
+ii. API keys
+iii. DB credentials
+
+create configmap yaml
+mention your s3 bucket name 
+
+Apply configmap
+terminal command
+ kubectl apply -f configmap.yaml
+
+verify:
+terminal command
+kubectl get configmap -n rtf-data-pipline
+
+12. base64 encoded your snowfloke login password
+Why do this?
+Kubernetes Secrets (like db-secret.yaml) don't store passwords in plain text; they require the data to be base64 encoded.
+Note: Base64 is not encryption. It’s just a way to hide the text from accidental viewing. Anyone with access to the cluster can easily decode it back.
+
+gitbase command
+echo -n "Guru00" | base64
+echo -n "Qwertyuiop?0101" | base64
+
+terminal command
+# Encode Username
+[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("Guru00"))
+# Encode Password
+[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("Qwertyuiop?0101"))
+
+and your answer copy that replce yaml username and password with base64
+
+Apply secret
+terminal command
+kubectl apply -f secret.yaml
+
+Verify secret
+terminal command
+kubectl get secrets -n rtf-data-pipline
+
+13. CONNECT CONFIG TO DEPLOYMENT 
+update config in deplyment yaml
+ envFrom:
+            - configMapRef:
+                name: rtf-config
+            - secretRef:
+                name: rtf-secret
+
+apply again
+terminal command
+kubectl apply -f deployment.yaml
+
+get pod name 
+terminal command
+kubectl get pods -n rtf-data-pipline
+you can pick any of those pods because they are all running the same configuration from your Deployment.
+
+Verify:
+terminal command
+kubectl exec -it <pod-name> -n rtf-data-pipline -- printenv
+
+check everthing in one command
+terminal command
+kubectl get all -n rtf-data-pipline
+
+14. DEPLOY AIRFLOW (YOUR REAL PROJECT)
+IMPORTANT DESIGN DECISION
+
+We will NOT use basic YAML only.
+👉 In real world, Airflow is deployed using:
+👉 Helm
+
+terminal command install helm
+choco install kubernetes-helm
+
+Verify
+terminal command
+helm version
+
+Add Airflow Helm Repo
+Remove the old repository:
+Use the helm repo remove command with the local name you gave it (usually apache-airflow).
+terminal command
+helm repo remove apache-airflow
+
+then add new repository
+terminal command
+helm repo add apache-airflow https://airflow.apache.org
+helm repo update
+
+15. Create Airflow Namespace
+Delete the existing Namespace
+This is the fastest way to remove everything (pods, services, secrets) associated with your old Airflow install.
+terminal command
+kubectl delete namespace airflow
+
+terminal command
+kubectl create namespace airflow
+
+16. install airflow on kubernetes
+Clean up Helm's record
+If you had a failed Helm install, Helm might still think the "release" exists even if the namespace is gone. Run this to be safe:
+terminal command
+helm uninstall airflow -n airflow
+
+create airflow-values.yaml file
+
+create real dag file
+this you have to connect with github so following command 
+Create dag airflow dag file .py
+
+EXPLANATION (VERY IMPORTANT)
+KubernetesPodOperator
+👉 Runs a pod from Airflow
+
+namespace="data-platform"
+👉 Uses your project namespace
+
+image="your-spark-image"
+👉 This will be YOUR Docker image
+
+cmds=[...]
+👉 Command inside container
+
+is_delete_operator_pod=True
+👉 Cleans pod after execution
+
+DEPLOY DAG in the github and airflow read it from there
+ENABLE GIT SYNC
+CREATE VALUES-git FILE
+
+GIT SYNC
+
+EXPLANATION (IMPORTANT)
+enabled: true
+👉 Turns on git-sync
+
+repo
+👉 Your GitHub repo with DAGs
+
+branch
+👉 Which branch to pull
+
+wait: 30
+👉 Sync every 30 seconds
+
+executing airflow command
+terminal command 
+helm install airflow apache-airflow/airflow --namespace airflow --create-namespace -f airflow-values.yaml
+
+if code fail then delete The "Clean Slate" Way (Recommended)
+terminal command 
+helm uninstall airflow --namespace airflow
+
+verify Pods
+teminal command
+kubectl get pods -n airflow
+
+17. Access Airflow UI
+terminal commands
+kubectl port-forward svc/airflow-api-server 8080:8080 --namespace airflow
+
+note: if you stuck clean reset with follwoing commands and starts from first
+helm uninstall airflow -n airflow --ignore-not-found
+kubectl delete namespace airflow --ignore-not-found
+kubectl delete namespace data-platform --ignore-not-found
+minikube delete
+
+clean and reseting airflow only
+helm uninstall airflow -n airflow
+kubectl delete namespace airflow
+
+
+Prometheus + Grafana (Monitoring Layer)
+
+1. Add Helm Repo
+terminal command
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+2. Install Prometheus + Grafana
+
+create namespace
+terminal command
+kubectl create namespace monitoring
+
+terminal command
+helm install monitoring prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace
+
+Get Grafana Password
+get your password command in gitbase not in powershell
+kubectl --namespace monitoring get secrets monitoring-grafana -o jsonpath="{.data.admin-password}" | base64 -d
+
+and run this way if you want to password in pwershell only 
+terminal command
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String((kubectl -n monitoring get secret monitoring-grafana -o jsonpath="{.data.admin-password}")))
+
+
+my password= KGNmWjxOu9y6y9TGWN2PzI2HvrbIAtOAJpR0GPhf
+
+
+Access Grafana UI
+kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring
+
+Login
+Username: admin
+Password: (the one you copied)
+
+
+3. Import Kubernetes Dashboard
+
+Inside Grafana: -> 👉 Click: Dashboards -> Import -> Use ID: 315
+
+What this dashboard shows
+CPU usage
+Memory usage
+Pods
+Nodes
+Cluster health
+
+Verify Prometheus is actually collecting data
+terminal command
+kubectl port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 -n monitoring
+
+web url
+http://localhost:9090
+
+In Prometheus UI
+Type this query:
+up
+Click Execute
+
+What you should see
+✅ If working:
+List of targets
+Values = 1
+👉 Example:
+up{job="kubelet"} 1
+up{job="node-exporter"} 1
+
+
