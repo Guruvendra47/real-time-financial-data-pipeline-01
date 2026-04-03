@@ -168,6 +168,7 @@ kubectl apply -f secret.yaml -n rtf-data-pipeline
 ### **What I did**
 
 I loaded **configuration and secrets**.
+**Note:** in secrets yaml file you need to add your aws access key and secret key from AWS and all other username and passwords.
 
 ### **Why I did it**
 
